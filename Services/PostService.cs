@@ -3,6 +3,7 @@ using PostBook.Data;
 using PostBook.Domains;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PostBook.Services
@@ -19,16 +20,24 @@ namespace PostBook.Services
 
         public async Task<List<Post>> GetPostsAsync()
         {
-            return await context.Posts.ToListAsync();
+            return await context.Posts
+                .Include(post => post.PostTags)
+                .ToListAsync();
         }
 
         public async Task<Post> GetPostByIdAsync(Guid postId)
         {
-            return await context.Posts.SingleOrDefaultAsync(post => post.Id == postId);
+            return await context.Posts
+                .Include(post => post.PostTags)
+                .SingleOrDefaultAsync(post => post.Id == postId);
         }
 
         public async Task<bool> CreatePostAsync(Post post)
         {
+            post.PostTags?.ForEach(x => x.TagName = x.TagName.ToLower());
+
+            await AddNewTags(post);
+
             await context.Posts.AddAsync(post);
             var created = await context.SaveChangesAsync();
 
@@ -58,9 +67,9 @@ namespace PostBook.Services
         public async Task<bool> UserOwnsPost(Guid postId, string UserId)
         {
             var post = await context.Posts.AsNoTracking().SingleOrDefaultAsync(post => post.Id == postId);
-            
+
             Console.WriteLine(postId);
-            
+
             if (post == null)
             {
                 Console.WriteLine("can't find post");
@@ -69,6 +78,35 @@ namespace PostBook.Services
             Console.WriteLine(post.UserId);
             Console.WriteLine(UserId);
             return post.UserId == UserId;
+        }
+
+        // Tags
+
+        private async Task AddNewTags(Post post)
+        {
+            foreach (var postTag in post.PostTags)
+            {
+                var existingTag = await context.Tags.SingleOrDefaultAsync(x => x.Name == postTag.TagName);
+                if (existingTag != null)
+                    continue;
+
+                await context.Tags.AddAsync(new Tag { Name = postTag.TagName, CreatedAt = DateTime.UtcNow });
+            }
+        }
+
+        public async Task<Tag> GetTagByNameAsync(string tagName)
+        {
+            return await context.Tags.AsNoTracking().SingleOrDefaultAsync(tag => tag.Name == tagName.ToLower());
+        }
+
+        public async Task<Tag> GetPostByTag(string tagName)
+        {
+            //var posts = await context.Posts.Select(post => post.PostTags.Where(item => item.TagName == tagName).First().Post).ToListAsync();
+
+            var posts = await context.Tags.Include(tag => tag.PostTags)
+                .SingleOrDefaultAsync(tag => tag.Name == tagName);
+
+            return posts;
         }
     }
 }

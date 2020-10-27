@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using PostBook.Domains;
 
 namespace PostBook.Contracts.Responses
 {
@@ -6,5 +8,6 @@ namespace PostBook.Contracts.Responses
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
+        public IEnumerable<TagResponse> Tags { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,7 @@ namespace PostBook.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class PostsController : Controller
     {
 
@@ -74,20 +75,25 @@ namespace PostBook.Controllers
         [HttpPost]
         public async Task<IActionResult> CreatePost([FromBody] CreatePostRequest request)
         {
+
+            var postId = Guid.NewGuid();
+            var tagId = Guid.NewGuid();
+
             var post = new Post
             {
                 Name = request.Name,
-                UserId = HttpContext.GetUserId()
+                UserId = HttpContext.GetUserId(),
+                PostTags = request.Tags.Select(x => new PostTag { PostId = postId, TagName = x }).ToList()
             };
 
             await _postService.CreatePostAsync(post);
 
-            var response = new PostResponse { Id = post.Id, Name = post.Name };
+            //var response = new PostResponse { Id = post.Id, Name = post.Name, Tags = post.PostTags };
 
             var baseUrl = $"{HttpContext.Request.Scheme}//{HttpContext.Request.Host.ToUriComponent()}";
             var locarionUri = baseUrl + "/api/posts/" + post.Id.ToString();
 
-            return Created(locarionUri, response);
+            return Created(locarionUri, post);
         }
 
         // DELETE: api/posts/{id}
@@ -108,6 +114,14 @@ namespace PostBook.Controllers
                 return NoContent();
 
             return NotFound();
+        }
+
+        [HttpGet("by/{tagName}")]
+        public async Task<IActionResult> GetPostsByTag([FromRoute] string tagName)
+        {
+            var posts = await _postService.GetPostByTag(tagName);
+            Console.WriteLine(posts);
+            return Ok(posts);
         }
     }
 }

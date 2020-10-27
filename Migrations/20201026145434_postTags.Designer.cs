@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PostBook.Data;
@@ -9,9 +10,10 @@ using PostBook.Data;
 namespace PostBook.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20201026145434_postTags")]
+    partial class postTags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,12 +243,12 @@ namespace PostBook.Migrations
                     b.Property<Guid>("PostId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("TagName")
+                    b.Property<string>("TagId")
                         .HasColumnType("text");
 
-                    b.HasKey("PostId", "TagName");
+                    b.HasKey("PostId", "TagId");
 
-                    b.HasIndex("TagName");
+                    b.HasIndex("TagId");
 
                     b.ToTable("PostTags");
                 });
@@ -284,13 +286,17 @@ namespace PostBook.Migrations
 
             modelBuilder.Entity("PostBook.Domains.Tag", b =>
                 {
-                    b.Property<string>("Name")
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.HasKey("Name");
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
 
                     b.ToTable("Tags");
                 });
@@ -363,7 +369,7 @@ namespace PostBook.Migrations
 
                     b.HasOne("PostBook.Domains.Tag", "Tag")
                         .WithMany("PostTags")
-                        .HasForeignKey("TagName")
+                        .HasForeignKey("TagId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
